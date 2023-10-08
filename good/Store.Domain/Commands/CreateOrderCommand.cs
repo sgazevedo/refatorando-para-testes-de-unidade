@@ -30,6 +30,7 @@ namespace Store.Domain.Commands
         .Requires()
         .HasLen(Customer, 11, "Customer", "Cliente inválido")
         .HasLen(ZipCode, 8, "ZipCode", "CEP inválido")
+        .IsTrue(Items.Any(), "Items", "Pedido não possui produtos")
       );
     }
   }
