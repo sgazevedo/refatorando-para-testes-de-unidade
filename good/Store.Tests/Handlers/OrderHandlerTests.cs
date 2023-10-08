@@ -14,6 +14,8 @@ namespace Store.Tests.Handlers
     private readonly IDiscountRepository _discountRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
+    private readonly IEnumerable<CreateOrderItemCommand> _orderItems;
+    private readonly OrderHandler _handler;
 
     public OrderHandlerTests()
     {
@@ -22,88 +24,97 @@ namespace Store.Tests.Handlers
       _discountRepository = new FakeDiscountRepository();
       _orderRepository = new FakeOrderRepository();
       _productRepository = new FakeProductRepository();
+      _orderItems = _productRepository.GetAll()
+        .Take(2)
+        .Select(x => new CreateOrderItemCommand(x.Id, 1));
+
+      _handler = new OrderHandler(
+        _customerRepository, 
+        _deliveryFeeRepository, 
+        _discountRepository, 
+        _productRepository, 
+        _orderRepository
+      );
     }
 
     [TestMethod]
     [TestCategory("Handlers")]
     public void Dado_um_cliente_inexistente_o_pedido_nao_deve_ser_gerado()
     {
-      // TODO: Implementar
-      Assert.IsTrue(true);
+      var command = new CreateOrderCommand(
+        customer: "62224038089", 
+        zipCode: "11111111", 
+        promoCode: "12345678", 
+        _orderItems.ToList()
+      );
+
+      _handler.Handle(command);
+
+      Assert.IsTrue(_handler.Invalid);
     }
 
     [TestMethod]
     [TestCategory("Handlers")]
-    public void Dado_um_cep_invalido_o_pedido_deve_ser_gerado_normalmente()
+    public void Dado_um_cep_invalido_o_pedido_nao_deve_ser_gerado()
     {
-      // TODO: Implementar
-      Assert.IsTrue(true);
+      var command = new CreateOrderCommand(
+        customer: "12345678911",
+        zipCode: "1111111",
+        promoCode: "12345678",
+        _orderItems.ToList()
+      );
+
+      _handler.Handle(command);
+
+      Assert.IsTrue(_handler.Invalid);
     }
 
     [TestMethod]
     [TestCategory("Handlers")]
     public void Dado_um_promocode_inexistente_o_pedido_deve_ser_gerado_normalmente()
     {
-      // TODO: Implementar
-      Assert.IsTrue(true);
+      var command = new CreateOrderCommand(
+        customer: "12345678911",
+        zipCode: "13411080",
+        promoCode: "",
+        _orderItems.ToList()
+      );
+
+      _handler.Handle(command);
+
+      Assert.IsTrue(_handler.Valid);
     }
 
     [TestMethod]
     [TestCategory("Handlers")]
     public void Dado_um_pedido_sem_itens_o_mesmo_nao_deve_ser_gerado()
     {
-      // TODO: Implementar
-      Assert.IsTrue(true);
-    }
+      var command = new CreateOrderCommand(
+        customer: "12345678911",
+        zipCode: "13411080",
+        promoCode: "12345678",
+        new List<CreateOrderItemCommand>()
+      );
 
-    [TestMethod]
-    [TestCategory("Handlers")]
-    public void Dado_um_comando_invalido_o_pedido_nao_deve_ser_gerado()
-    {
-      var command = new CreateOrderCommand
-      {
-        Customer = "",
-        ZipCode = "13411080",
-        PromoCode = "12345678"
-      };
-      command.Items.Add(new CreateOrderItemCommand(Guid.NewGuid(), 1));
-      command.Items.Add(new CreateOrderItemCommand(Guid.NewGuid(), 1));
+      _handler.Handle(command);
 
-      var handler = new OrderHandler(
-          _customerRepository,
-          _deliveryFeeRepository,
-          _discountRepository,
-          _productRepository,
-          _orderRepository);
-
-      handler.Handle(command);
-
-      Assert.IsTrue(command.Invalid);
+      Assert.IsTrue(_handler.Invalid);
     }
 
     [TestMethod]
     [TestCategory("Handlers")]
     public void Dado_um_comando_valido_o_pedido_deve_ser_gerado()
     {
-      var command = new CreateOrderCommand
-      {
-        Customer = "12345678",
-        ZipCode = "13411080",
-        PromoCode = "12345678"
-      };
-      command.Items.Add(new CreateOrderItemCommand(Guid.NewGuid(), 1));
-      command.Items.Add(new CreateOrderItemCommand(Guid.NewGuid(), 1));
+      var command = new CreateOrderCommand(
+        customer: "12345678911",
+        zipCode: "13411080",
+        promoCode: "12345678",
+        _orderItems.ToList()
+      );
 
-      var handler = new OrderHandler(
-          _customerRepository,
-          _deliveryFeeRepository,
-          _discountRepository,
-          _productRepository,
-          _orderRepository);
+      _handler.Handle(command);
 
-      handler.Handle(command);
-
-      Assert.IsTrue(handler.Valid);
+      Assert.IsTrue(_handler.Valid);
     }
   }
 }
